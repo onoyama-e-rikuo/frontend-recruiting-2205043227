@@ -20,7 +20,7 @@ export type Payment = {
 };
 
 export function charge(invoice: Invoice, payments: Payment[]): Receipt {
-  const sortedPayments = [...payments].sort((payment) => (payment.type !== 'CASH' ? -1 : 1));
+  const sortedPayments = payments.sort((payment) => (payment.type !== 'CASH' ? -1 : 1));
   const deposit = calcDeposit(sortedPayments, invoice.total);
   const change = calcChange(sortedPayments, deposit, invoice.total);
 
