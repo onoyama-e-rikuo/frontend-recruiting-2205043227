@@ -1,3 +1,6 @@
+import { calcChange } from './calcChange';
+import { calcDeposit } from './calcDeposit';
+
 export type Invoice = {
   total: number;
 };
@@ -8,43 +11,18 @@ export type Receipt = {
   change: number;
 };
 
+type PaymentTypes = 'CASH' | 'COUPON';
+
 export type Payment = {
-  type: string;
+  type: PaymentTypes;
   percentage?: number;
   amount?: number;
 };
 
-export function charge(invoice: Invoice, payments: Payment[]) {
-  const total = invoice.total;
-  let deposit = 0;
+export function charge(invoice: Invoice, payments: Payment[]): Receipt {
+  const sortedPayments = [...payments].sort((payment) => (payment.type !== 'CASH' ? -1 : 1));
+  const deposit = calcDeposit(sortedPayments, invoice.total);
+  const change = calcChange(sortedPayments, deposit, invoice.total);
 
-  payments
-    .sort((payment) => (payment.type !== 'CASH' ? -1 : 1))
-    .map((payment) => {
-      if (payment.type === 'COUPON') {
-        if (payment.percentage != null) {
-          deposit += Math.floor(total * (payment.percentage / 100));
-        } else {
-          deposit += payment.amount || 0;
-        }
-      } else {
-        if (deposit >= total) {
-          throw new Error('OverCharge');
-        }
-        deposit += payment.amount || 0;
-      }
-    });
-  if (total > deposit) {
-    throw new Error('Shortage');
-  }
-
-  let isCoupon = true;
-  for (let i = 0; i < payments.length; i++) {
-    if (payments[i].type !== 'COUPON') {
-      isCoupon = false;
-      continue;
-    }
-  }
-  if (isCoupon) return { total, deposit, change: 0 };
-  return { total: total, deposit: deposit, change: deposit - total };
+  return { total: invoice.total, deposit, change };
 }
